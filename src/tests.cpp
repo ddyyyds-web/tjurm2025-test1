@@ -1,4 +1,5 @@
 #include "tests.h"
+#include <vector>
 
 // 练习1，实现库函数strlen
 int my_strlen(char *str) {
@@ -7,6 +8,11 @@ int my_strlen(char *str) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+     int length = 0;
+    while (*str != '\0') {
+        length++;
+        str++;
+    }
     return 0;
 }
 
@@ -19,6 +25,17 @@ void my_strcat(char *str_1, char *str_2) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+     while (*str_1 != '\0') {
+        str_1++;
+    }
+    // 从str_2开始复制字符到str_1的末尾，直到遇到'\0'
+    while (*str_2 != '\0') {
+        *str_1 = *str_2;
+        str_1++;
+        str_2++;
+    }
+    // 添加字符串结束符'\0'
+    *str_1 = '\0';
 }
 
 
@@ -31,6 +48,33 @@ char* my_strstr(char *s, char *p) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    // 获取子串p的长度
+    int p_len = my_strlen(p);
+    // 如果子串为空，返回原字符串的指针
+    if (p_len == 0) {
+        return s;
+    }
+
+    char *s_temp = s;
+    // 遍历主串s，直到找到可能的匹配位置
+    while (*s_temp != '\0') {
+        // 如果当前字符匹配，检查剩余的字符
+        if (*s_temp == *p) {
+            char *s_ptr = s_temp;
+            char *p_ptr = p;
+            // 检查子串p的每个字符是否都匹配
+            while (*p_ptr != '\0' && *s_ptr == *p_ptr) {
+                s_ptr++;
+                p_ptr++;
+            }
+            // 如果完全匹配，返回当前位置的指针
+            if (*p_ptr == '\0') {
+                return s_temp;
+            }
+        }
+        // 移动到下一个字符
+        s_temp++;
+    }
     return 0;
 }
 
@@ -97,6 +141,20 @@ void rgb2gray(float *in, float *out, int h, int w) {
 
     // IMPLEMENT YOUR CODE HERE
     // ...
+    for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+            // 计算每个像素在彩色图像中的索引
+            int index = (i * w + j) * 3;
+            // 读取红色、绿色和蓝色通道的值
+            float r = in[index];
+            float g = in[index + 1];
+            float b = in[index + 2];
+            // 计算灰度值
+            float gray = 0.1140 * b + 0.5870 * g + 0.2989 * r;
+            // 将灰度值写入输出数组
+            out[i * w + j] = gray;
+        }
+    }
 }
 
 // 练习5，实现图像处理算法 resize：缩小或放大图像
@@ -198,7 +256,36 @@ void resize(float *in, float *out, int h, int w, int c, float scale) {
 
     int new_h = h * scale, new_w = w * scale;
     // IMPLEMENT YOUR CODE HERE
+for (int i = 0; i < new_h; i++) {
+        for (int j = 0; j < new_w; j++) {
+            float x = j / scale;
+            float y = i / scale;
 
+            int x1 = (int)x;
+            int y1 = (int)y;
+            int x2 = x1 + 1;
+            int y2 = y1 + 1;
+
+            // 边界检查
+            if (x2 >= w) x2 = x1;
+            if (y2 >= h) y2 = y1;
+
+            for (int k = 0; k < c; k++) {
+                float p1 = in[(y1 * w + x1) * c + k];
+                float p2 = in[(y2 * w + x1) * c + k];
+                float p3 = in[(y1 * w + x2) * c + k];
+                float p4 = in[(y2 * w + x2) * c + k];
+
+                float dx = x - x1;
+                float dy = y - y1;
+
+                float Q = p1 * (1 - dx) * (1 - dy) + p2 * dx * (1 - dy) + p3 * (1 - dx) * dy + p4 * dx * dy;
+
+                int index = (i * new_w + j) * c + k;
+                out[index] = Q;
+            }
+        }
+    }
 }
 
 
@@ -221,4 +308,28 @@ void hist_eq(float *in, int h, int w) {
      */
 
     // IMPLEMENT YOUR CODE HERE
+    std::vector<int> hist(256, 0);
+    for (int i = 0; i < h; ++i) {
+        for (int j = 0; j < w; ++j) {
+            int pixel_value = (int)in[i * w + j];
+            hist[pixel_value]++;
+        }
+    }
+
+    // 计算累计直方图
+    std::vector<float> cum_hist(256, 0);
+    float total_pixels = h * w;
+    cum_hist[0] = (float)hist[0] / total_pixels;
+    for (int i = 1; i < 256; ++i) {
+        cum_hist[i] = cum_hist[i - 1] + (float)hist[i] / total_pixels;
+    }
+
+    // 映射原像素值到新的像素值
+    for (int i = 0; i < h; ++i) {
+        for (int j = 0; j < w; ++j) {
+            int pixel_value = (int)in[i * w + j];
+            float new_pixel_value = cum_hist[pixel_value] * 255;
+            in[i * w + j] = new_pixel_value;
+        }
+    }
 }
